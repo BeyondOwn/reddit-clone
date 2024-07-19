@@ -3,7 +3,7 @@ import { db } from "./db";
 import {PrismaAdapter} from '@next-auth/prisma-adapter'
 import GoogleProvider from 'next-auth/providers/google'
 import { nanoid } from 'nanoid'
-import { redirect } from "next/dist/server/api-utils";
+
 
 export const authOptions: NextAuthOptions = {
     adapter: PrismaAdapter(db),
