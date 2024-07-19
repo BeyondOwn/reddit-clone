@@ -5,7 +5,6 @@ import { getAuthSession } from "@/lib/auth"
 
 const CustomFeed = async () =>{
 
-    let combinedPosts = [];
     const session = await getAuthSession()
 
    const followedCommunities = await db.subscription.findMany({
@@ -17,7 +16,7 @@ const CustomFeed = async () =>{
     },
    })
 
-   const posts = await db.post.findMany({
+   const postsFromFollowed = await db.post.findMany({
     where:{
         subreddit:{
             name:{
@@ -37,37 +36,36 @@ const CustomFeed = async () =>{
     take: INFINITE_SCROLLING_PAGINATION_RESULTS,
    })
 
-   if(posts.length < INFINITE_SCROLLING_PAGINATION_RESULTS){
-    const allOtherPosts = await db.post.findMany({
-        where:{
-            subreddit:{
-                name:{
-                    notIn: followedCommunities.map(({subreddit})=>subreddit.id),
-                },
-            },
-        },
-        orderBy:{
-            createdAt:'desc',
-        },
-        include:{
-            votes:true,
-            author:true,
-            comments:true,
-            subreddit:true,
-        },
-        take:INFINITE_SCROLLING_PAGINATION_RESULTS,
-    })
+   // Determine if additional posts need to be fetched
+   const shouldFetchAdditionalPosts = postsFromFollowed.length < INFINITE_SCROLLING_PAGINATION_RESULTS;
 
-    combinedPosts = allOtherPosts
-    }
+   let combinedPosts = shouldFetchAdditionalPosts ? [] : postsFromFollowed;
 
-    else {
-        combinedPosts = posts;
-    }
-   
-   
+   if (shouldFetchAdditionalPosts) {
+       const additionalPosts = await db.post.findMany({
+           where: {
+               subreddit: {
+                   name: {
+                       notIn: followedCommunities.map(({ subreddit }) => subreddit.id),
+                   },
+               },
+           },
+           orderBy: {
+               createdAt: 'desc',
+           },
+           include: {
+               votes: true,
+               author: true,
+               comments: true,
+               subreddit: true,
+           },
+           take: INFINITE_SCROLLING_PAGINATION_RESULTS,
+       });
+
+       combinedPosts = [...postsFromFollowed, ...additionalPosts];
 
     return <PostFeed initialPosts={combinedPosts} />
+   }
 }
 
 export default CustomFeed
