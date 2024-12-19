@@ -1,0 +1,32 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'  # or whatever version you're using
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Set environment variables
+        env:
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          REDIS_SECRET: ${{ secrets.REDIS_SECRET }}
+        run: |
+          echo "REDIS_URL=${REDIS_URL}" >> $GITHUB_ENV
+          echo "REDIS_SECRET=${REDIS_SECRET}" >> $GITHUB_ENV
+
+      - name: Run application
+        run: npm start
